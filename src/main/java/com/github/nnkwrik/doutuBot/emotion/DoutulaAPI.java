@@ -33,22 +33,8 @@ public class DoutulaAPI {
 
 
         try {
-
+            //获取图片的url
             String emoUrl = Utils.getPicFromDoutula(keyword);
-            /***************************************************************************
-            Request request = new Request.Builder().url(baseUrl + keyword).build();
-            Response response = okHttpClient.newCall(request).execute();
-            Doutula resultJson = Utils.fromJson(response.body().string(), Doutula.class);
-            List<EmoInfo> infoList = resultJson.getData().getList();
-            String emoUrl;
-            while (true) {
-                //靠前的比较准?
-                emoUrl = infoList.get(WeChatUtils.random(0, 10)).getImage_url();
-                if (emoUrl.startsWith("https:")) {
-                    break;
-                }
-
-            }*************************************************************************/
             return emoAPI.downloadEmoUrl(emoUrl, WechatEmoAPI.DOUTULA_EMO_DIR);
         } catch (Exception e) {
             e.printStackTrace();
