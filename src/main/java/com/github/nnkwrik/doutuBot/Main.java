@@ -10,7 +10,6 @@ import io.github.biezhi.wechat.api.constant.Config;
 public class Main {
 
     public static void main(String[] args) {
-
         if(FileUtil.clearAllMultiFile()){
             Config config = Config.me().autoLogin(false).showTerminal(true);
             new MessageHandler(config ,RobotType.TULING).start();

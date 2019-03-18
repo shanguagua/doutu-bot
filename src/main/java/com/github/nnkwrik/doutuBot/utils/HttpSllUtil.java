@@ -8,8 +8,9 @@ package com.github.nnkwrik.doutuBot.utils;
 
 import com.github.nnkwrik.doutuBot.model.Doutula;
 import com.github.nnkwrik.doutuBot.model.EmoInfo;
-import io.github.biezhi.wechat.utils.StringUtils;
+import com.github.nnkwrik.doutuBot.ssl.MySSLProtocolSocketFactory;
 import io.github.biezhi.wechat.utils.WeChatUtils;
+import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -65,6 +66,8 @@ public class HttpSllUtil {
             URIBuilder builder = new URIBuilder(url);
             installMap(builder, params);
             URI uri = builder.build();
+            SslUtils.ignoreSsl();
+
             HttpGet get = new HttpGet(uri);
             //指定报文头Content-type、User-Agent
             get.setHeader("Content-type", "application/x-www-form-urlencoded");
@@ -83,11 +86,9 @@ public class HttpSllUtil {
     }
 
     public static String sendHttpsRequestByPost(String url, Map<String, String> params) throws Exception {
-        String body = "";
-
         //采用绕过验证的方式处理https请求
         SSLContext sslcontext = createIgnoreVerifySSL();
-        //设置协议http和https对应的处理socket链接工厂的对象
+
         Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
                 .register("http", PlainConnectionSocketFactory.INSTANCE)
                 .register("https", new SSLConnectionSocketFactory(sslcontext))
@@ -176,7 +177,7 @@ public class HttpSllUtil {
 
 
     public static void main(String[] args) throws Exception {
-        String url = "http://www.doutula.com/api/search";
+        String url = "https://www.doutula.com/api/search";
         Map params = new HashMap();
         params.put("keyword", "哈");
         String back = sendHttpsRequestByGet(url, params);
