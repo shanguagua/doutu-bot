@@ -85,7 +85,7 @@ public class MessageHandler extends WeChatBot {
         if (StringUtils.isEmpty(message.getFromUserName())) {
             return;
         }
-        message.setImagePath(emoAPI.downloadEmoUrl(message.getImagePath(), emoAPI.CHAT_EMO_DIR));
+        message.setImagePath(emoAPI.downloadEmoUrl(message.getImagePath(), WechatEmoAPI.CHAT_EMO_DIR));
         log.info("接收到好友 [{}] 发来的表情，已存于: {}", message.getName(), FileUtil.correctImgName(message));
         emoAPI.sendDefaultEmo(message.getFromUserName());
         log.info("自动回复好友 [{}] 默认表情", message.getName());

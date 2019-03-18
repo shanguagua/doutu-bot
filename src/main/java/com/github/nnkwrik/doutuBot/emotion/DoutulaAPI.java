@@ -29,8 +29,14 @@ public class DoutulaAPI {
             .build();
 
     public String getEmoByKeyword(String keyword) {
-        Request request = new Request.Builder().url(baseUrl + keyword).build();
+
+
+
         try {
+
+            String emoUrl = Utils.getPicFromDoutula(keyword);
+            /***************************************************************************
+            Request request = new Request.Builder().url(baseUrl + keyword).build();
             Response response = okHttpClient.newCall(request).execute();
             Doutula resultJson = Utils.fromJson(response.body().string(), Doutula.class);
             List<EmoInfo> infoList = resultJson.getData().getList();
@@ -42,11 +48,9 @@ public class DoutulaAPI {
                     break;
                 }
 
-            }
-
+            }*************************************************************************/
             return emoAPI.downloadEmoUrl(emoUrl, WechatEmoAPI.DOUTULA_EMO_DIR);
-
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;

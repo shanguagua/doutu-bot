@@ -5,6 +5,7 @@ import io.github.biezhi.wechat.api.request.FileRequest;
 import io.github.biezhi.wechat.api.request.JsonRequest;
 import io.github.biezhi.wechat.api.response.FileResponse;
 import io.github.biezhi.wechat.api.response.JsonResponse;
+import io.github.biezhi.wechat.utils.DateUtils;
 import io.github.biezhi.wechat.utils.StringUtils;
 import io.github.biezhi.wechat.utils.WeChatUtils;
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ public class WechatEmoAPI {
     public String downloadEmoUrl(String emoUrl, String dir) {
 
         String[] emoName = emoUrl.split("/");
-        String dirPath = bot.config().assetsDir() + "/" + dir;
+        String dirPath = bot.config().assetsDir() + File.separator + dir;
 
         FileResponse response = (FileResponse) bot.client().download(new FileRequest(emoUrl));
         InputStream inputStream = response.getInputStream();
@@ -38,7 +39,8 @@ public class WechatEmoAPI {
     }
 
     public boolean sendEmo(String toUserName, String filePath) {
-        // DateUtils.sendSleep();
+
+        DateUtils.sendSleep();
         String mediaId = bot.api().uploadMedia(toUserName, filePath).getMediaId();
         if (StringUtils.isEmpty(mediaId)) {
             log.warn("Media为空");
@@ -67,7 +69,7 @@ public class WechatEmoAPI {
     }
 
     public boolean sendDefaultEmo(String toUserName) {
-        File[] emos = new File(bot.config().assetsDir() + "/" + DEFAULT_EMO_DIR).listFiles();
+        File[] emos = new File(bot.config().assetsDir() + File.separator + DEFAULT_EMO_DIR).listFiles();
         return sendEmo(toUserName, emos[WeChatUtils.random(0, emos.length - 1)].getPath());
     }
 

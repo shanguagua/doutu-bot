@@ -1,7 +1,10 @@
 package com.github.nnkwrik.doutuBot.utils;
 
+import com.github.nnkwrik.doutuBot.model.Doutula;
+import com.github.nnkwrik.doutuBot.model.EmoInfo;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.github.biezhi.wechat.utils.WeChatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +26,8 @@ public final class Utils {
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
 
     private static final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+
+    private static final String  DOUTULA_URL = "https://www.doutula.com/api/search";
 
     private Utils() {
     }
@@ -69,6 +74,31 @@ public final class Utils {
             log.error("Json反序列化失败", e);
         }
         return null;
+    }
+
+    /**
+     *
+     * @param keyword
+     * @return
+     * @throws Exception
+     */
+    public  static String  getPicFromDoutula(String keyword)throws Exception{
+
+        Map params = new HashMap();
+        params.put("keyword",keyword);
+        //String back =  HttpClientUtil.doGet(DOUTULA_URL,params,null,true);
+        String back =  HttpSllUtil.sendHttpsRequestByPost(DOUTULA_URL,params);
+        Doutula resultJson = Utils.fromJson(back, Doutula.class);
+        List<EmoInfo> infoList = resultJson.getData().getList();
+        String emoUrl;
+        while (true) {
+            //靠前的比较准?
+            emoUrl = infoList.get(WeChatUtils.random(0, 10)).getImage_url();
+            if (emoUrl.startsWith("https:")) {
+                break;
+            }
+        }
+        return  emoUrl;
     }
 
 
