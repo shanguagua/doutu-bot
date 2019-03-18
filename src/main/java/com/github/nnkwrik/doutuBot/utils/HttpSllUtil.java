@@ -6,125 +6,180 @@ package com.github.nnkwrik.doutuBot.utils;
  */
 
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Field;
+import com.github.nnkwrik.doutuBot.model.Doutula;
+import com.github.nnkwrik.doutuBot.model.EmoInfo;
+import io.github.biezhi.wechat.utils.StringUtils;
+import io.github.biezhi.wechat.utils.WeChatUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import com.github.nnkwrik.doutuBot.model.Doutula;
-import com.github.nnkwrik.doutuBot.model.EmoInfo;
-import io.github.biezhi.wechat.utils.WeChatUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.ParseException;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.conn.ssl.X509HostnameVerifier;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
 
 public class HttpSllUtil {
     /**
      * 发送HTTPS	POST请求
      *
      * @param
-     * @return  返回响应值
-     * */
-    public static final String sendHttpsRequestByPost(String url, Map<String, String> params) {
-        String responseContent = null;
-        HttpClient httpClient = new DefaultHttpClient();
-        //创建TrustManager
-        X509TrustManager xtm = new X509TrustManager() {
+     * @return 返回响应值
+     */
+    public static String sendHttpsRequestByGet(String url, Map<String, String> params) throws Exception {
+        String body = "";
+
+        //采用绕过验证的方式处理https请求
+        SSLContext sslcontext = createIgnoreVerifySSL();
+        //设置协议http和https对应的处理socket链接工厂的对象
+        Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.INSTANCE)
+                .register("https", new SSLConnectionSocketFactory(sslcontext))
+                .build();
+        PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
+        HttpClients.custom().setConnectionManager(connManager);
+        //创建自定义的httpclient对象
+        CloseableHttpClient client = HttpClients.custom().setConnectionManager(connManager).build();
+        String result = null;
+        try {
+            URIBuilder builder = new URIBuilder(url);
+            installMap(builder, params);
+            URI uri = builder.build();
+            HttpGet get = new HttpGet(uri);
+            //指定报文头Content-type、User-Agent
+            get.setHeader("Content-type", "application/x-www-form-urlencoded");
+            get.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:6.0.2) Gecko/20100101 Firefox/6.0.2");
+            //执行请求操作，并拿到结果（同步阻塞）
+            CloseableHttpResponse response = client.execute(get);
+            //获取结果实体
+            if (response.getStatusLine().getStatusCode() == 200) {
+                // 判断返回状态是否为200
+                result = EntityUtils.toString(response.getEntity(), "UTF-8");
+            }
+            return result;
+        } finally {
+            client.close();
+        }
+    }
+
+    public static String sendHttpsRequestByPost(String url, Map<String, String> params) throws Exception {
+        String body = "";
+
+        //采用绕过验证的方式处理https请求
+        SSLContext sslcontext = createIgnoreVerifySSL();
+        //设置协议http和https对应的处理socket链接工厂的对象
+        Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.INSTANCE)
+                .register("https", new SSLConnectionSocketFactory(sslcontext))
+                .build();
+        PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
+        HttpClients.custom().setConnectionManager(connManager);
+
+        //创建自定义的httpclient对象
+        CloseableHttpClient client = HttpClients.custom().setConnectionManager(connManager).build();
+        try {
+            //创建post方式请求对象
+            HttpPost httpPost = new HttpPost(url);
+            //指定报文头Content-type、User-Agent
+            httpPost.setHeader("Content-type", "application/x-www-form-urlencoded");
+            httpPost.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:6.0.2) Gecko/20100101 Firefox/6.0.2");
+            //执行请求操作，并拿到结果（同步阻塞）
+            installParamList(httpPost, params);
+            CloseableHttpResponse response = client.execute(httpPost);
+            String result = EntityUtils.toString(response.getEntity(), "utf-8");
+            return result;
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            client.close();
+        }
+    }
+
+    /**
+     * @param httpPost
+     * @param param
+     * @throws Exception
+     */
+    private static void installParamList(HttpPost httpPost, Map<String, String> param) throws Exception {
+        if (null != param) {
+            List<NameValuePair> paramList = new ArrayList<>();
+            for (String key : param.keySet()) {
+                paramList.add(new BasicNameValuePair(key, param.get(key)));
+            }
+            UrlEncodedFormEntity entity = new UrlEncodedFormEntity(paramList);
+            httpPost.setEntity(entity);
+        }
+    }
+
+    /**
+     * 组装参数
+     *
+     * @param builder
+     * @param param
+     */
+    private static void installMap(URIBuilder builder, Map<String, String> param) {
+        if (param != null) {
+            for (String key : param.keySet()) {
+                builder.addParameter(key, param.get(key));
+            }
+        }
+    }
+
+    /**
+     * 绕过证书
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws KeyManagementException
+     */
+    public static SSLContext createIgnoreVerifySSL() throws NoSuchAlgorithmException, KeyManagementException {
+        SSLContext sc = SSLContext.getInstance("SSLv3");
+        // 实现一个X509TrustManager接口，用于绕过验证，不用修改里面的方法
+        X509TrustManager trustManager = new X509TrustManager() {
             @Override
-            public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {}
+            public void checkClientTrusted(
+                    java.security.cert.X509Certificate[] paramArrayOfX509Certificate,
+                    String paramString) throws CertificateException {
+            }
             @Override
-            public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {}
+            public void checkServerTrusted(
+                    java.security.cert.X509Certificate[] paramArrayOfX509Certificate,
+                    String paramString) throws CertificateException {
+            }
             @Override
-            public X509Certificate[] getAcceptedIssuers() {
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
                 return null;
             }
         };
-        //这个好像是HOST验证
-        X509HostnameVerifier hostnameVerifier = new X509HostnameVerifier() {
-            @Override
-            public boolean verify(String arg0, SSLSession arg1) {
-                return true;
-            }
-            @Override
-            public void verify(String arg0, SSLSocket arg1) throws IOException {}
-            @Override
-            public void verify(String arg0, String[] arg1, String[] arg2) throws SSLException {}
-            @Override
-            public void verify(String arg0, X509Certificate arg1) throws SSLException {}
-        };
-        try {
-            //TLS1.0与SSL3.0基本上没有太大的差别，可粗略理解为TLS是SSL的继承者，但它们使用的是相同的SSLContext
-            SSLContext ctx = SSLContext.getInstance("TLS");
-            //使用TrustManager来初始化该上下文，TrustManager只是被SSL的Socket所使用
-            ctx.init(null, new TrustManager[] { xtm }, null);
-            //创建SSLSocketFactory
-            SSLSocketFactory socketFactory = new SSLSocketFactory(ctx);
-            socketFactory.setHostnameVerifier(hostnameVerifier);
-            //通过SchemeRegistry将SSLSocketFactory注册到我们的HttpClient上
-            httpClient.getConnectionManager().getSchemeRegistry().register(new Scheme("https", socketFactory, 443));
-            HttpPost httpPost = new HttpPost(url);
-            // 构建POST请求的表单参数
-            List<NameValuePair> formParams = new ArrayList<NameValuePair>();
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                formParams.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
-            }
-            httpPost.setEntity(new UrlEncodedFormEntity(formParams, "UTF-8"));
-            HttpResponse response = httpClient.execute(httpPost);
-            // 获取响应实体
-            HttpEntity entity = response.getEntity();
-            if (entity != null) {
-                responseContent = EntityUtils.toString(entity, "UTF-8");
-            }
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (ClientProtocolException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            // 关闭连接,释放资源
-            httpClient.getConnectionManager().shutdown();
-        }
-        return responseContent;
+        sc.init(null, new TrustManager[]{trustManager}, null);
+        return sc;
     }
+
 
     public static void main(String[] args) throws Exception {
         String url = "http://www.doutula.com/api/search";
         Map params = new HashMap();
         params.put("keyword", "哈");
-
-        String back = sendHttpsRequestByPost(url, params);
+        String back = sendHttpsRequestByGet(url, params);
         Doutula resultJson = Utils.fromJson(back, Doutula.class);
         List<EmoInfo> infoList = resultJson.getData().getList();
         String emoUrl;
@@ -138,4 +193,6 @@ public class HttpSllUtil {
         }
         System.out.println("图片:" + emoUrl);
     }
+
+
 }

@@ -1,5 +1,6 @@
 package com.github.nnkwrik.doutuBot.utils;
 
+import cn.hutool.http.HttpUtil;
 import com.github.nnkwrik.doutuBot.model.Doutula;
 import com.github.nnkwrik.doutuBot.model.EmoInfo;
 import com.google.gson.Gson;
@@ -86,8 +87,9 @@ public final class Utils {
 
         Map params = new HashMap();
         params.put("keyword",keyword);
-        //String back =  HttpClientUtil.doGet(DOUTULA_URL,params,null,true);
-        String back =  HttpSllUtil.sendHttpsRequestByPost(DOUTULA_URL,params);
+        //获取图片的url
+        String back =  HttpSllUtil.sendHttpsRequestByGet(DOUTULA_URL,params);
+        //转json
         Doutula resultJson = Utils.fromJson(back, Doutula.class);
         List<EmoInfo> infoList = resultJson.getData().getList();
         String emoUrl;
